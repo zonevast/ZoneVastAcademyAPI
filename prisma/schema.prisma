@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model User {
+  id                Int       @id @default(autoincrement())
+  profile_picture_id Int?     
+  email             String    @unique
+  password_hash     String
+  first_name        String
+  last_name         String
+  bio               String?
+  date_of_birth     DateTime?
+  phone             String?
+  country           String?
+  is_verified       Boolean   @default(false)
+  last_login        DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+  instructor        Instructor[]
+  wishlist          Wishlist[]
+  reviews           Review[]
+  enrollments       Enrollment[]
+  discussions       Discussion[]
+  discussion_replies DiscussionReply[]
+}
+
+model PaymentMethod {
+    payment_method_id Int @id @default(autoincrement())
+    method_name String
+    description String?
+    icon_url String
+    is_active Boolean
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    enrollments Enrollment[]
+}
+
+model Instructor {
+    instructor_id Int @id @default(autoincrement())
+    user_id Int
+    title String?
+    expertise Json?
+    rating Decimal?
+    is_featured Boolean
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    user User @relation(fields: [user_id], references: [id])
+    courses Course[]
+}
+
+model Course {
+    id Int @id @default(autoincrement())
+    title String
+    slug String
+    short_description String?
+    long_description String?
+    instructor_id Int
+    subcategory_id Int
+    thumbnail_url String?
+    preview_video_url String?
+    level Int
+    price Decimal
+    rating Decimal
+    certificate_provided Boolean
+    status Int
+    created_at DateTime? @default(now())
+    updated_at DateTime? @updatedAt
+    published_at DateTime?
+    instructor Instructor @relation(fields: [instructor_id], references: [instructor_id])
+    subcategory Subcategory @relation(fields: [subcategory_id], references: [subcategory_id])
+    course_stats CourseStats[]
+    reviews Review[]
+    enrollments Enrollment[]
+    discussions Discussion[]
+    course_sections CourseSection[]
+    wishlist Wishlist[]
+}
+
+model CourseStats {
+    id Int @id @default(autoincrement())
+    course_id Int
+    duration_hours Int
+    total_lectures Int
+    enrollment_count Int
+    total_reviews Int
+    course Course @relation(fields: [course_id], references: [id])
+}
+
+model Lecture {
+    lecture_id Int @id @default(autoincrement())
+    section_id Int
+    title String
+    description String?
+    video_url String
+    duration_minutes Int
+    order_index Int
+    resources Json?
+    is_active Boolean @default(true)
+    created_at DateTime @default(now())
+    section CourseSection @relation(fields: [section_id], references: [section_id])
+    lecture_progress LectureProgress[]
+}
+
+model CourseSection {
+    section_id Int @id @default(autoincrement())
+    course_id Int
+    title String
+    description String?
+    order_index Int
+    is_active Boolean
+    created_at DateTime @default(now())
+    course Course @relation(fields: [course_id], references: [id])
+    lectures Lecture[]
+}
+
+model Enrollment {
+    enrollment_id Int @id @default(autoincrement())
+    user_id Int
+    course_id Int
+    progress_percentage Decimal
+    last_accessed DateTime
+    price_paid Decimal
+    payment_method_id Int
+    certificate_issued Boolean
+    certificate_url String?
+    status Int
+    enrollment_date DateTime @default(now())
+    user User @relation(fields: [user_id], references: [id])
+    course Course @relation(fields: [course_id], references: [id])
+    payment_method PaymentMethod @relation(fields: [payment_method_id], references: [payment_method_id])
+    certificate Certificate[]
+    lecture_progress LectureProgress[]
+}
+
+model Certificate {
+    certificate_id Int @id @default(autoincrement())
+    enrollment_id Int
+    certificate_number Int
+    issued_date DateTime
+    certificate_url String
+    verification_url String
+    is_valid Boolean
+    enrollment Enrollment @relation(fields: [enrollment_id], references: [enrollment_id])
+}
+
+model LectureProgress {
+    progress_id Int @id @default(autoincrement())
+    enrollment_id Int
+    lecture_id Int
+    is_completed Boolean
+    watch_time_seconds Int?
+    completion_date DateTime?
+    last_position_seconds Int?
+    enrollment Enrollment @relation(fields: [enrollment_id], references: [enrollment_id])
+    lecture Lecture @relation(fields: [lecture_id], references: [lecture_id])
+}
+
+model Review {
+    review_id Int @id @default(autoincrement())
+    course_id Int
+    user_id Int
+    rating Decimal
+    comment String?
+    created_at DateTime @default(now())
+    updated_at DateTime @updatedAt
+    course Course @relation(fields: [course_id], references: [id])
+    user User @relation(fields: [user_id], references: [id])
+}
+
+model Wishlist {
+    wishlist_id Int @id @default(autoincrement())
+    user_id Int
+    course_id Int
+    added_at DateTime? @default(now())
+    user User @relation(fields: [user_id], references: [id])
+    course Course @relation(fields: [course_id], references: [id])
+}
+
+model Category {
+    category_id Int @id @default(autoincrement())
+    name String
+    slug String
+    description String?
+    icon_url String?
+    is_active Boolean
+    created_at DateTime @default(now())
+    subcategories Subcategory[]
+}
+
+model Subcategory {
+    subcategory_id Int @id @default(autoincrement())
+    category_id Int
+    name String
+    slug String
+    description String?
+    is_active Boolean
+    created_at DateTime @default(now())
+    category Category @relation(fields: [category_id], references: [category_id])
+    courses Course[]
+}
+
+model Discussion {
+    discussion_id Int @id @default(autoincrement())
+    course_id Int
+    user_id Int
+    title String
+    content String
+    is_pinned Boolean
+    is_answered Boolean
+    reply_count Int?
+    last_reply_at DateTime?
+    created_at DateTime @default(now())
+    course Course @relation(fields: [course_id], references: [id])
+    user User @relation(fields: [user_id], references: [id])
+    discussion_replies DiscussionReply[]
+}
+
+model DiscussionReply {
+    reply_id Int @id @default(autoincrement())
+    discussion_id Int
+    user_id Int
+    content String
+    is_instructor_reply Boolean
+    is_solution Boolean
+    helpful_count Int
+    created_at DateTime @default(now())
+    discussion Discussion @relation(fields: [discussion_id], references: [discussion_id])
+    user User @relation(fields: [user_id], references: [id])
+}
